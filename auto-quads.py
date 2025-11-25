@@ -19,8 +19,6 @@
 
 import argparse
 import base64
-from datetime import datetime
-import json
 import os
 import urllib3
 import requests
@@ -107,8 +105,21 @@ def login(cliargs):
 
 def register(cliargs):
   print("Registering a new account")
-  print("Username: {}".format(cliargs.username))
-  print("Password: {}".format(cliargs.password))
+
+  endpoint = "https://{}/api/v3/register".format(cliargs.quads_server)
+  headers = {
+    "Content-Type": "application/json"
+  }
+  payload = {
+    "username": cliargs.username,
+    "password": cliargs.password
+  }
+  response = requests.post(endpoint, verify=False, headers=headers, json=payload)
+  if response.status_code != 200:
+    print("Failed to register: {}".format(response.text))
+    return 1
+  else:
+    print("Registered successfully")
   return 0
 
 
