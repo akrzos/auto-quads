@@ -19,6 +19,7 @@
 
 import argparse
 import base64
+from datetime import datetime, timezone
 import os
 import urllib3
 import requests
@@ -43,7 +44,7 @@ def add_host_to_cloud(cliargs, token, hostname):
   response = requests.post(endpoint, verify=False, headers=headers, json=payload)
   if response.status_code != 200:
     print("Failed to add host to cloud: {}".format(response.text))
-    return 1
+    sys.exit(1)
   else:
     print("Host added to cloud successfully")
   return 0
@@ -59,7 +60,7 @@ def available_hosts(cliargs):
 
 
 def create_cloud(cliargs, token):
-  print("Creating a new self-scheduled cloud")
+  print("Creating a new self-scheduled cloud\n")
   print("Description: {}".format(cliargs.description))
   print("Owner: {}".format(cliargs.owner))
   print("QinQ VLAN ID: {}".format(cliargs.qinq))
@@ -79,7 +80,7 @@ def create_cloud(cliargs, token):
   response = requests.post(endpoint, verify=False, headers=headers, json=payload)
   if response.status_code != 201:
     print("Failed to create cloud: {}".format(response.text))
-    return 1
+    sys.exit(1)
   else:
     print("Cloud created successfully\n")
     print("Cloud name: {}".format(response.json()["cloud"]["name"]))
@@ -96,11 +97,11 @@ def login(cliargs):
   response = requests.post(endpoint, verify=False, headers=headers)
   if response.status_code != 200:
     print("Failed to login: {}".format(response.text))
-    return 1
+    sys.exit(1)
   else:
     token = response.json()["auth_token"]
     print("Logged in successfully")
-    return token
+  return token
 
 
 def register(cliargs):
@@ -117,7 +118,7 @@ def register(cliargs):
   response = requests.post(endpoint, verify=False, headers=headers, json=payload)
   if response.status_code != 200:
     print("Failed to register: {}".format(response.text))
-    return 1
+    sys.exit(1)
   else:
     print("Registered successfully")
   return 0
@@ -135,18 +136,14 @@ def terminate_cloud(cliargs, token):
   print("Status code: {}".format(response.status_code))
   if response.status_code != 200:
     print("Failed to terminate cloud: {}".format(response.text))
-    return 1
+    sys.exit(1)
   else:
     print("Cloud terminated successfully")
   return 0
 
 
 def wait_for_cloud(cliargs):
-  print("Waiting for a cloud to complete validating")
-  print("Cloud name: {}".format(cliargs.cloud))
-  print("Timeout: {}".format(cliargs.timeout))
-  print("Poll interval: {}".format(cliargs.poll_interval))
-  print("Assignment ID: {}".format(cliargs.assignment_id))
+  print(f"Waiting for a cloud {cliargs.cloud} to complete validating")
   end_time = time.time() + cliargs.timeout
   endpoint = "https://{}/api/v3/assignments/{}".format(cliargs.quads_server, cliargs.assignment_id)
   headers = {
@@ -155,9 +152,9 @@ def wait_for_cloud(cliargs):
   while time.time() < end_time:
     response = requests.get(endpoint, verify=False, headers=headers)
     if str(response.json()["validated"]).lower() == "false":
-      print("Cloud is not validated yet")
+      print("{}: Cloud is not validated yet".format(datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')))
     else:
-      print("Cloud is validated")
+      print("{}: Cloud is validated".format(datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')))
       break
     time.sleep(cliargs.poll_interval)
 
@@ -174,7 +171,7 @@ def main():
   parser.add_argument("-u", "--username", default=os.environ.get("QUADS_USERNAME"), help="Username for QUADS API (env: QUADS_USERNAME)")
   parser.add_argument("-p", "--password", default=os.environ.get("QUADS_PASSWORD"), help="Password for QUADS API (env: QUADS_PASSWORD)")
   parser.add_argument("-c", "--cloud", default=os.environ.get("QUADS_CLOUD"), help="Cloud name (env: QUADS_CLOUD)")
-  parser.add_argument("-o", "--owner", default=os.environ.get("QUADS_OWNER"), help="Cloud owner (Defaults to non-email address of username)")
+  parser.add_argument("-o", "--owner", default=os.environ.get("QUADS_OWNER"), help="Cloud owner (env: QUADS_OWNER)")
 
   subparsers = parser.add_subparsers(dest="command")
 
@@ -183,9 +180,9 @@ def main():
 
   parser_create = subparsers.add_parser("create-cloud",
       help="Create a new self-scheduled cloud", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-  parser_create.add_argument("-d", "--description", default=os.environ.get("QUADS_DESCRIPTION"), help="Cloud description (Defaults to username)")
-  parser_create.add_argument("-q", "--qinq", type=int, choices=[0, 1], default=os.environ.get("QUADS_QINQ", 0), help="QinQ VLAN ID")
-  parser_create.add_argument("-w", "--wipe", action="store_true", default=os.environ.get("QUADS_WIPE", False), help="Wipe the cloud")
+  parser_create.add_argument("-d", "--description", default=os.environ.get("QUADS_DESCRIPTION"), help="Cloud description (env: QUADS_DESCRIPTION)")
+  parser_create.add_argument("-q", "--qinq", type=int, choices=[0, 1], default=os.environ.get("QUADS_QINQ", 0), help="QinQ VLAN ID (env: QUADS_QINQ)")
+  parser_create.add_argument("-w", "--wipe", action="store_true", default=os.environ.get("QUADS_WIPE", False), help="Wipe the cloud (env: QUADS_WIPE)")
 
   parser_available = subparsers.add_parser("available-hosts",
       help="List available hosts", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -196,14 +193,13 @@ def main():
 
   parser_wait = subparsers.add_parser("wait-for-cloud",
       help="Wait for a cloud to complete validating", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-  parser_wait.add_argument("-i", "--assignment-id", required=True, help="Assignment ID")
-  parser_wait.add_argument("-t", "--timeout", type=int, default=30, help="Timeout in seconds")
-  parser_wait.add_argument("-p", "--poll-interval", type=int, default=10, help="Poll interval in seconds")
+  parser_wait.add_argument("-i", "--assignment-id", default=os.environ.get("QUADS_ASSIGNMENT_ID"), help="Assignment ID (env: QUADS_ASSIGNMENT_ID)")
+  parser_wait.add_argument("-t", "--timeout", type=int, default=900, help="Timeout in seconds (env: QUADS_TIMEOUT)")
+  parser_wait.add_argument("-p", "--poll-interval", type=int, default=10, help="Poll interval in seconds (env: QUADS_POLL_INTERVAL)")
 
   parser_terminate = subparsers.add_parser("terminate-cloud",
       help="Terminate a cloud", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-  parser_terminate.add_argument("-i", "--assignment-id", required=True, help="Assignment ID")
-
+  parser_terminate.add_argument("-i", "--assignment-id", default=os.environ.get("QUADS_ASSIGNMENT_ID"), required=True, help="Assignment ID (env: QUADS_ASSIGNMENT_ID)")
   cliargs = parser.parse_args()
   
   # Validate required arguments
