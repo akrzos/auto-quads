@@ -47,16 +47,17 @@ def add_host_to_cloud(cliargs, token, hostname):
     sys.exit(1)
   else:
     print("Host added to cloud successfully")
-  return 0
 
 
 def available_hosts(cliargs):
+  total_available = 0
   print("Getting available hosts: \n")
   endpoint = "https://{}/api/v3/available?can_self_schedule=true".format(cliargs.quads_server)
   response = requests.get(endpoint, verify=False)
   for host in response.json():
     print(host)
-  return 0
+    total_available += 1
+  print("\nTotal available hosts: {}".format(total_available))
 
 
 def create_cloud(cliargs, token):
@@ -85,9 +86,9 @@ def create_cloud(cliargs, token):
     print("Cloud created successfully\n")
     print("Cloud name: {}".format(response.json()["cloud"]["name"]))
     print("Cloud Assignment ID: {}".format(response.json()["notification"]["assignment_id"]))
-  return 0
 
 
+# Only function that returns a value (The token)
 def login(cliargs):
   endpoint = "https://{}/api/v3/login".format(cliargs.quads_server)
   headers = {
@@ -121,7 +122,6 @@ def register(cliargs):
     sys.exit(1)
   else:
     print("Registered successfully")
-  return 0
 
 
 def terminate_cloud(cliargs, token):
@@ -139,7 +139,6 @@ def terminate_cloud(cliargs, token):
     sys.exit(1)
   else:
     print("Cloud terminated successfully")
-  return 0
 
 
 def wait_for_cloud(cliargs):
@@ -152,13 +151,11 @@ def wait_for_cloud(cliargs):
   while time.time() < end_time:
     response = requests.get(endpoint, verify=False, headers=headers)
     if str(response.json()["validated"]).lower() == "false":
-      print("{}: Cloud is not validated yet".format(datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')))
+      print(f"{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}: {cliargs.cloud} is not validated yet")
     else:
-      print("{}: Cloud is validated".format(datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')))
+      print(f"{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}: {cliargs.cloud} is validated")
       break
     time.sleep(cliargs.poll_interval)
-
-  return 0
 
 
 def main():
