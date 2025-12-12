@@ -113,7 +113,7 @@ def register(cliargs):
     "Content-Type": "application/json"
   }
   payload = {
-    "username": cliargs.username,
+    "email": cliargs.username,
     "password": cliargs.password
   }
   response = requests.post(endpoint, verify=False, headers=headers, json=payload)
