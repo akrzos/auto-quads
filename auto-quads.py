@@ -191,12 +191,12 @@ def main():
   parser_wait = subparsers.add_parser("wait-for-cloud",
       help="Wait for a cloud to complete validating", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
   parser_wait.add_argument("-i", "--assignment-id", default=os.environ.get("QUADS_ASSIGNMENT_ID"), help="Assignment ID (env: QUADS_ASSIGNMENT_ID)")
-  parser_wait.add_argument("-t", "--timeout", type=int, default=900, help="Timeout in seconds (env: QUADS_TIMEOUT)")
+  parser_wait.add_argument("-t", "--timeout", type=int, default=3600, help="Timeout in seconds (env: QUADS_TIMEOUT)")
   parser_wait.add_argument("-p", "--poll-interval", type=int, default=10, help="Poll interval in seconds (env: QUADS_POLL_INTERVAL)")
 
   parser_terminate = subparsers.add_parser("terminate-cloud",
       help="Terminate a cloud", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-  parser_terminate.add_argument("-i", "--assignment-id", default=os.environ.get("QUADS_ASSIGNMENT_ID"), required=True, help="Assignment ID (env: QUADS_ASSIGNMENT_ID)")
+  parser_terminate.add_argument("-i", "--assignment-id", default=os.environ.get("QUADS_ASSIGNMENT_ID"), help="Assignment ID (env: QUADS_ASSIGNMENT_ID)")
   cliargs = parser.parse_args()
   
   # Validate required arguments
