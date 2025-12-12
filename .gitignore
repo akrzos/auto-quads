@@ -208,3 +208,5 @@ __marimo__/
 
 # Prevent auto-quads creds
 env.sh
+env.perflab.sh
+env.scalelab.sh
