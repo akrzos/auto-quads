@@ -42,7 +42,8 @@ def add_host_to_cloud(cliargs, token, hostname):
     "hostname": hostname
   }
   response = requests.post(endpoint, verify=False, headers=headers, json=payload)
-  if response.status_code != 200:
+  if response.status_code != 200 and response.status_code != 201:
+    print("Status Code: {}".format(response.status_code))
     print("Failed to add host to cloud: {}".format(response.text))
     sys.exit(1)
   else:
@@ -96,7 +97,8 @@ def login(cliargs):
     "Authorization": "Basic {}".format(base64.b64encode(f"{cliargs.username}:{cliargs.password}".encode()).decode())
   }
   response = requests.post(endpoint, verify=False, headers=headers)
-  if response.status_code != 200:
+  if response.status_code != 200 and response.status_code != 201:
+    print("Status Code: {}".format(response.status_code))
     print("Failed to login: {}".format(response.text))
     sys.exit(1)
   else:
